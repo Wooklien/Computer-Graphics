@@ -1,6 +1,9 @@
 #include "cube.h"
 
 static Cube cube;
+static Objects bunny("bunny.obj");
+static Objects teddy("teddy.obj");
+static Objects dragon("dragon.obj");
 static double spin_rate = 0.01;
 static double red = 3.0, green = 1.0, blue = 2.0;
 static const float m_ROTSCALE = -2.1;
@@ -15,7 +18,11 @@ static Matrix4 n(
 int Window::width  = 512;   // set window width in pixels here
 int Window::height = 512;   // set window height in pixels here
 Vector3 Window::lastPoint = Vector3(0, 0, 0);
+float Window::mid_x = 0;
+float Window::mid_y = 0;
+float Window::mid_z = 0;
 Window::MovementType Window::Movement = NONE;
+Window::ObjectType Window::type = F1;
 
 //----------------------------------------------------------------------------
 // Callback method called when system is idle.
@@ -48,57 +55,85 @@ void Window::displayCallback(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear color and depth buffers
 	glMatrixMode(GL_MODELVIEW);
 	glLoadMatrixd(cube.getMatrix().getPointer());
-	
-	// Draw sides of cube in object coordinate system:
-	glBegin(GL_QUADS);
-    glColor3f(red, green, blue);
+	glColor3f(red, green, blue);
 
-    // Draw front face:
-    glNormal3f(0.0, 0.0, 1.0);   
-    glVertex3f(-5.0,  5.0,  5.0);
-    glVertex3f( 5.0,  5.0,  5.0);
-    glVertex3f( 5.0, -5.0,  5.0);
-    glVertex3f(-5.0, -5.0,  5.0);
-    
-    // Draw left side:
-    glNormal3f(-1.0, 0.0, 0.0);
-    glVertex3f(-5.0,  5.0,  5.0);
-    glVertex3f(-5.0,  5.0, -5.0);
-    glVertex3f(-5.0, -5.0, -5.0);
-    glVertex3f(-5.0, -5.0,  5.0);
-    
-    // Draw right side:
-    glNormal3f(1.0, 0.0, 0.0);
-    glVertex3f( 5.0,  5.0,  5.0);
-    glVertex3f( 5.0,  5.0, -5.0);
-    glVertex3f( 5.0, -5.0, -5.0);
-    glVertex3f( 5.0, -5.0,  5.0);
-  
-    // Draw back face:
-    glNormal3f(0.0, 0.0, -1.0);
-    glVertex3f(-5.0,  5.0, -5.0);
-    glVertex3f( 5.0,  5.0, -5.0);
-    glVertex3f( 5.0, -5.0, -5.0);
-    glVertex3f(-5.0, -5.0, -5.0);
-  
-    // Draw top side:
-    glNormal3f(0.0, 1.0, 0.0);
-    glVertex3f(-5.0,  5.0,  5.0);
-    glVertex3f( 5.0,  5.0,  5.0);
-    glVertex3f( 5.0,  5.0, -5.0);
-    glVertex3f(-5.0,  5.0, -5.0);
-  
-    // Draw bottom side:
-    glNormal3f(0.0, -1.0, 0.0);
-    glVertex3f(-5.0, -5.0, -5.0);
-    glVertex3f( 5.0, -5.0, -5.0);
-    glVertex3f( 5.0, -5.0,  5.0);
-    glVertex3f(-5.0, -5.0,  5.0);
-	
-	glEnd();
+	drawObject();
 
 	glFlush();  
 	glutSwapBuffers();
+}
+
+void Window::drawCube() {
+	// Draw sides of cube in object coordinate system:
+	glBegin(GL_QUADS);
+
+	// Draw front face:
+	glNormal3f(0.0, 0.0, 1.0);
+	glVertex3f(-5.0, 5.0, 5.0);
+	glVertex3f(5.0, 5.0, 5.0);
+	glVertex3f(5.0, -5.0, 5.0);
+	glVertex3f(-5.0, -5.0, 5.0);
+
+	// Draw left side:
+	glNormal3f(-1.0, 0.0, 0.0);
+	glVertex3f(-5.0, 5.0, 5.0);
+	glVertex3f(-5.0, 5.0, -5.0);
+	glVertex3f(-5.0, -5.0, -5.0);
+	glVertex3f(-5.0, -5.0, 5.0);
+
+	// Draw right side:
+	glNormal3f(1.0, 0.0, 0.0);
+	glVertex3f(5.0, 5.0, 5.0);
+	glVertex3f(5.0, 5.0, -5.0);
+	glVertex3f(5.0, -5.0, -5.0);
+	glVertex3f(5.0, -5.0, 5.0);
+
+	// Draw back face:
+	glNormal3f(0.0, 0.0, -1.0);
+	glVertex3f(-5.0, 5.0, -5.0);
+	glVertex3f(5.0, 5.0, -5.0);
+	glVertex3f(5.0, -5.0, -5.0);
+	glVertex3f(-5.0, -5.0, -5.0);
+
+	// Draw top side:
+	glNormal3f(0.0, 1.0, 0.0);
+	glVertex3f(-5.0, 5.0, 5.0);
+	glVertex3f(5.0, 5.0, 5.0);
+	glVertex3f(5.0, 5.0, -5.0);
+	glVertex3f(-5.0, 5.0, -5.0);
+
+	// Draw bottom side:
+	glNormal3f(0.0, -1.0, 0.0);
+	glVertex3f(-5.0, -5.0, -5.0);
+	glVertex3f(5.0, -5.0, -5.0);
+	glVertex3f(5.0, -5.0, 5.0);
+	glVertex3f(-5.0, -5.0, 5.0);
+
+	glEnd();
+}
+
+void Window::drawObject(int nVerts, float *vertices, float *normals) {
+	glBegin(GL_TRIANGLES);
+	for (int i = 0; i < nVerts * 3; i += 3) {
+		glNormal3f(normals[i], normals[i + 1], normals[i + 2]);
+		glVertex3f(vertices[i], vertices[i + 1], vertices[i + 2]);
+	}
+	glEnd();
+}
+
+void Window::drawObject() {
+	if (type == F1) {
+		drawCube();
+	}
+	else if (type == F2) {
+		drawObject(bunny.nVerts, bunny.vertices, bunny.normals);
+	}
+	else if (type == F3) {
+		drawObject(teddy.nVerts, teddy.vertices, teddy.normals);
+	}
+	else if (type == F4) {
+		drawObject(dragon.nVerts, dragon.vertices, dragon.normals);
+	}
 }
 
 Cube::Cube()
@@ -126,6 +161,11 @@ void Cube::spin(double deg)
 	cube.setMatrix(cube.getMatrix(), cube.getMatrix().multiply(cube.getMatrix().rotateY(deg)));
 }
 
+Objects::Objects(string filename) {
+	char *c = const_cast<char*>(filename.c_str());
+	ObjReader::readObj(c, nVerts, &vertices, &normals, nIndices, &indices);
+}
+
 int main(int argc, char *argv[])
 {
 	float specular[]  = {1.0, 1.0, 1.0, 1.0};
@@ -135,7 +175,7 @@ int main(int argc, char *argv[])
 	glutInit(&argc, argv);      	      	      // initialize GLUT
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);   // open an OpenGL context with double buffering, RGB colors, and depth buffering
 	glutInitWindowSize(Window::width, Window::height);      // set initial window size
-	glutCreateWindow("OpenGL Cube for CSE167");    	      // open window and set window title
+	glutCreateWindow("Opengl 3D Demo");    	      // open window and set window title
 
 	glEnable(GL_DEPTH_TEST);            	      // enable depth buffering
 	glClear(GL_DEPTH_BUFFER_BIT);       	      // clear depth buffer
@@ -166,6 +206,7 @@ int main(int argc, char *argv[])
 
 	// Process keyboard input
 	glutKeyboardFunc(Window::processNormalKeys);
+	glutSpecialFunc(Window::processSpecialKeys);
     
 	// Initialize cube matrix:
 	cube.getMatrix().identity();
@@ -264,6 +305,33 @@ void Window::processNormalKeys(unsigned char key, int x, int y)
 	m.print();
 }
 
+void Window::processSpecialKeys(int key, int x, int y) {
+	float scale = 1;
+	switch (key)
+	{
+	case GLUT_KEY_F1:
+		type = F1;
+		scale = 1;
+		break;
+	case GLUT_KEY_F2:
+		type = F2;
+		scale = fit_to_screen(bunny.nVerts, bunny.vertices); 
+		break;
+	case GLUT_KEY_F3:
+		type = F3;
+		scale = fit_to_screen(teddy.nVerts, teddy.vertices);
+		break;
+	case GLUT_KEY_F4:
+		type = F4;
+		scale = fit_to_screen(dragon.nVerts, dragon.vertices);
+		break;
+	}
+
+	cube.getMatrix().identity();
+	cube.getMatrix().translation(-mid_x, -mid_y, -mid_z);
+	cube.getMatrix().scale(scale, scale, scale);
+}
+
 void Window::onLButtonDown(int button, int state, int x, int y) {
 	Movement = ROTATE;
 
@@ -311,4 +379,53 @@ Vector3 Window::trackBallMapping(int x, int y) {
 	v.z = sqrt(1.001 - d*d);
 	v.normalize();
 	return v;
+}
+
+float Window::fit_to_screen(int nVerts, float *vertices) {
+	double dbl_max = 500;
+	double min[3] = { dbl_max, dbl_max, dbl_max };
+	double max[3] = { -dbl_max, -dbl_max, -dbl_max };
+
+	int x = nVerts * 3;
+	for (int i = 0; i < x; i += 3) {
+		if (min[0] > vertices[i]) {
+			min[0] = vertices[i];
+		}
+
+		if (max[0] < vertices[i]) {
+			max[0] = vertices[i];
+		}
+	}
+
+	for (int i = 1; i < x; i += 3) {
+		if (min[1] > vertices[i]) {
+			min[1] = vertices[i];
+		}
+
+		if (max[1] < vertices[i]) {
+			max[1] = vertices[i];
+		}
+	}
+
+	for (int i = 2; i < x; i += 3) {
+		if (min[2] > vertices[i]) {
+			min[2] = vertices[i];
+		}
+
+		if (max[2] < vertices[i]) {
+			max[2] = vertices[i];
+		}
+	}
+
+	float sx = max[0] - min[0];
+	float sy = max[1] - min[1];
+	float sz = max[2] - min[2];
+	float d = sqrt(sx*sx + sy*sy + sz*sz);
+
+	mid_x = (30/d)*(max[0] + min[0]) * 0.5;
+	mid_y = (30/d)*(max[1] + min[1]) * 0.5;
+	mid_z = (30/d)*(max[2] + min[2]) * 0.5;
+	cout << "Offset(x,y,z): " << mid_x << ", " << mid_y << ", " << mid_z << "\n";
+	cout << "Scale Factor: " << d << endl;
+	return 30/d;
 }
